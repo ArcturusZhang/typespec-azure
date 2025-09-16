@@ -210,7 +210,6 @@ extern dec armCommonTypesVersion(
  * This decorator is used on Azure Resource Manager resources that are not based on
  * Azure.ResourceManager common types.
  *
- * @param propertiesType: The type of the resource properties.
  * @param provider Optional. The resource provider namespace for the virtual resource.
  */
 extern dec armVirtualResource(target: Model, provider?: valueof string);
