@@ -206,6 +206,100 @@ it("should apply @pageItems to 'value' property when not already decorated", asy
   strictEqual(method.response.resultSegments, method.pagingMetadata.pageItemsSegments);
 });
 
+it("should use explicit pageItems property name from @markAsPageable options", async () => {
+  const { program } = await SimpleTester.compile(`
+      @service
+      namespace TestService {
+        model ItemListResult {
+          items: Item[];
+        }
+
+        model Item {
+          id: string;
+          name: string;
+        }
+
+        @Azure.ClientGenerator.Core.Legacy.markAsPageable(#{ pageItems: "items", scope: "csharp" })
+        @route("/items")
+        @get
+        op listItems(): ItemListResult;
+      }
+    `);
+
+  const context = await createSdkContextForTester(program, {
+    emitterName: "@azure-typespec/typespec-csharp",
+  });
+  const methods = context.sdkPackage.clients[0].methods;
+  strictEqual(methods.length, 1);
+
+  const method = methods[0];
+  strictEqual(method.kind, "paging");
+  strictEqual(method.name, "listItems");
+
+  ok(method.pagingMetadata);
+  ok(method.pagingMetadata.pageItemsSegments);
+  strictEqual(method.pagingMetadata.pageItemsSegments.length, 1);
+  strictEqual(method.pagingMetadata.pageItemsSegments[0].name, "items");
+
+  ok(method.response.resultSegments);
+  strictEqual(method.response.resultSegments.length, 1);
+  strictEqual(method.response.resultSegments[0].name, "items");
+  strictEqual(method.response.resultSegments, method.pagingMetadata.pageItemsSegments);
+});
+
+it("should not apply @markAsPageable options when scope does not match", async () => {
+  const { program } = await SimpleTester.compile(`
+      @service
+      namespace TestService {
+        model ItemListResult {
+          items: Item[];
+        }
+
+        model Item {
+          id: string;
+          name: string;
+        }
+
+        @Azure.ClientGenerator.Core.Legacy.markAsPageable(#{ pageItems: "items", scope: "java" })
+        @route("/items")
+        @get
+        op listItems(): ItemListResult;
+      }
+    `);
+
+  const context = await createSdkContextForTester(program);
+  const methods = context.sdkPackage.clients[0].methods;
+  strictEqual(methods.length, 1);
+  strictEqual(methods[0].kind, "basic");
+});
+
+it("should warn when explicit pageItems property is missing", async () => {
+  const diagnostics = await SimpleTester.diagnose(`
+      @service
+      namespace TestService {
+        model ItemListResult {
+          items: Item[];
+        }
+
+        model Item {
+          id: string;
+          name: string;
+        }
+
+        @Azure.ClientGenerator.Core.Legacy.markAsPageable(#{ pageItems: "results" })
+        @route("/items")
+        @get
+        op listItems(): ItemListResult;
+      }
+    `);
+
+  strictEqual(diagnostics.length, 1);
+  strictEqual(
+    diagnostics[0].code,
+    "@azure-tools/typespec-client-generator-core/invalid-mark-as-pageable-target",
+  );
+});
+
 it("should warn when model has no @pageItems property and no 'value' property", async () => {
   const diagnostics = await SimpleTester.diagnose(`
       @service

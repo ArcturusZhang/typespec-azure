@@ -1581,7 +1581,7 @@ This decorator is considered legacy functionality and should only be used when
 standard TypeSpec paging patterns are not feasible.
 
 ```typespec
-@Azure.ClientGenerator.Core.Legacy.markAsPageable(scope?: valueof string)
+@Azure.ClientGenerator.Core.Legacy.markAsPageable(scopeOrOptions?: valueof string | Azure.ClientGenerator.Core.Legacy.MarkAsPageableOptions)
 ```
 
 #### Target
@@ -1591,9 +1591,9 @@ The operation that should be treated as a pageable operation
 
 #### Parameters
 
-| Name  | Type             | Description                                                                                                                                                                                                                                                     |
-| ----- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| scope | `valueof string` | Specifies the target language emitters that the decorator should apply.<br />If not set, the decorator will be applied to all language emitters by default.<br />You can use "!" to exclude specific languages, for example: !(java, python) or !java, !python. |
+| Name           | Type                                                                  | Description                                                                                                                                                                                                                                                                                                                                 |
+| -------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| scopeOrOptions | `valueof string \| ClientGenerator.Core.Legacy.MarkAsPageableOptions` | Specifies the target language emitters that the decorator should apply,<br />or options including the page items property name and target emitters.<br />If not set, the decorator will be applied to all language emitters by default.<br />You can use "!" to exclude specific languages, for example: !(java, python) or !java, !python. |
 
 #### Examples
 
@@ -1601,6 +1601,19 @@ The operation that should be treated as a pageable operation
 
 ```typespec
 @Azure.ClientGenerator.Core.Legacy.markAsPageable
+@route("/items")
+@get
+op listItems(): ItemListResult;
+```
+
+##### Force a regular operation to be treated as pageable with an explicit page items property
+
+```typespec
+model ItemListResult {
+  items: Item[];
+}
+
+@Azure.ClientGenerator.Core.Legacy.markAsPageable(#{ pageItems: "items", scope: "csharp" })
 @route("/items")
 @get
 op listItems(): ItemListResult;

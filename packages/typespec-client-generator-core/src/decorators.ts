@@ -62,6 +62,7 @@ import {
   HierarchyBuildingDecorator,
   MarkAsLroDecorator,
   MarkAsPageableDecorator,
+  MarkAsPageableOptions,
   NextLinkVerbDecorator,
 } from "../generated-defs/Azure.ClientGenerator.Core.Legacy.js";
 import {
@@ -1615,8 +1616,9 @@ const markAsPageableKey = createStateSymbol("markAsPageable");
 export const $markAsPageable: MarkAsPageableDecorator = (
   context: DecoratorContext,
   target: Operation,
-  scope?: LanguageScopes,
+  scopeOrOptions?: LanguageScopes | MarkAsPageableOptions,
 ) => {
+  const options = resolveMarkAsPageableOptions(scopeOrOptions);
   const httpOperation = ignoreDiagnostics(getHttpOperation(context.program, target));
   const modelResponse = httpOperation.responses.filter(
     (r) =>
@@ -1658,31 +1660,16 @@ export const $markAsPageable: MarkAsPageableDecorator = (
     return;
   }
 
-  // Check if any property has @pageItems decorator by checking the program state
-  // The @pageItems decorator uses a state symbol "TypeSpec.pageItems"
-  const pageItemsStateKey = Symbol.for("TypeSpec.pageItems");
-  let itemsProperty: ModelProperty | undefined = undefined;
-  for (const [, prop] of responseType.properties) {
-    if (context.program.stateSet(pageItemsStateKey).has(prop)) {
-      itemsProperty = prop;
-      break;
-    }
-  }
-
+  const itemsProperty = getMarkAsPageableItemsProperty(context, responseType, options.pageItems);
   if (!itemsProperty) {
-    // Try to find a property named "value"
-    itemsProperty = responseType.properties.get("value");
-    if (!itemsProperty) {
-      // No @pageItems property and no "value" property found
-      reportDiagnostic(context.program, {
-        code: "invalid-mark-as-pageable-target",
-        format: {
-          operation: target.name,
-        },
-        target: context.decoratorTarget,
-      });
-      return;
-    }
+    reportDiagnostic(context.program, {
+      code: "invalid-mark-as-pageable-target",
+      format: {
+        operation: target.name,
+      },
+      target: context.decoratorTarget,
+    });
+    return;
   }
 
   // Store metadata that will be checked by TCGC to treat this operation as pageable
@@ -1692,9 +1679,47 @@ export const $markAsPageable: MarkAsPageableDecorator = (
     markAsPageableKey,
     target,
     { itemsProperty },
-    scope,
+    options.scope,
   );
 };
+
+function resolveMarkAsPageableOptions(scopeOrOptions?: LanguageScopes | MarkAsPageableOptions): {
+  pageItems?: string;
+  scope?: LanguageScopes;
+} {
+  if (!scopeOrOptions || typeof scopeOrOptions === "string") {
+    return { scope: scopeOrOptions };
+  }
+
+  const pageItems = scopeOrOptions.pageItems;
+  const optionsScope = scopeOrOptions.scope;
+
+  return {
+    pageItems: typeof pageItems === "string" ? pageItems : undefined,
+    scope: typeof optionsScope === "string" ? optionsScope : undefined,
+  };
+}
+
+function getMarkAsPageableItemsProperty(
+  context: DecoratorContext,
+  responseType: Model,
+  pageItems?: string,
+): ModelProperty | undefined {
+  if (typeof pageItems === "string") {
+    return responseType.properties.get(pageItems);
+  }
+
+  // Check if any property has @pageItems decorator by checking the program state
+  // The @pageItems decorator uses a state symbol "TypeSpec.pageItems"
+  const pageItemsStateKey = Symbol.for("TypeSpec.pageItems");
+  for (const [, prop] of responseType.properties) {
+    if (context.program.stateSet(pageItemsStateKey).has(prop)) {
+      return prop;
+    }
+  }
+
+  return responseType.properties.get("value");
+}
 
 export function getMarkAsPageable(
   context: TCGCContext,

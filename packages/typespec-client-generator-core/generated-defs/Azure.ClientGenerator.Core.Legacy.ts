@@ -8,6 +8,11 @@ import type {
   Type,
 } from "@typespec/compiler";
 
+export interface MarkAsPageableOptions {
+  readonly pageItems?: string;
+  readonly scope?: string;
+}
+
 /**
  * Change the base type of a model in the client SDK.
  *
@@ -233,7 +238,8 @@ export type MarkAsLroDecorator = (
  * standard TypeSpec paging patterns are not feasible.
  *
  * @param target The operation that should be treated as a pageable operation
- * @param scope Specifies the target language emitters that the decorator should apply.
+ * @param scopeOrOptions Specifies the target language emitters that the decorator should apply,
+ * or options including the page items property name and target emitters.
  * If not set, the decorator will be applied to all language emitters by default.
  * You can use "!" to exclude specific languages, for example: !(java, python) or !java, !python.
  * @example Force a regular operation to be treated as pageable for backward compatibility
@@ -243,11 +249,22 @@ export type MarkAsLroDecorator = (
  * @get
  * op listItems(): ItemListResult;
  * ```
+ * @example Force a regular operation to be treated as pageable with an explicit page items property
+ * ```typespec
+ * model ItemListResult {
+ *   items: Item[];
+ * }
+ *
+ * @Azure.ClientGenerator.Core.Legacy.markAsPageable(#{ pageItems: "items", scope: "csharp" })
+ * @route("/items")
+ * @get
+ * op listItems(): ItemListResult;
+ * ```
  */
 export type MarkAsPageableDecorator = (
   context: DecoratorContext,
   target: Operation,
-  scope?: string,
+  scopeOrOptions?: string | MarkAsPageableOptions,
 ) => DecoratorValidatorCallbacks | void;
 
 /**

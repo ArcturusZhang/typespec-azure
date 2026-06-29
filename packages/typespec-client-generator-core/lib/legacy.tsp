@@ -221,7 +221,8 @@ extern dec markAsLro(target: Operation, scope?: valueof string);
  * standard TypeSpec paging patterns are not feasible.
  *
  * @param target The operation that should be treated as a pageable operation
- * @param scope Specifies the target language emitters that the decorator should apply.
+ * @param scopeOrOptions Specifies the target language emitters that the decorator should apply,
+ * or options including the page items property name and target emitters.
  * If not set, the decorator will be applied to all language emitters by default.
  * You can use "!" to exclude specific languages, for example: !(java, python) or !java, !python.
  *
@@ -233,8 +234,39 @@ extern dec markAsLro(target: Operation, scope?: valueof string);
  * op listItems(): ItemListResult;
  * ```
  *
+ * @example Force a regular operation to be treated as pageable with an explicit page items property
+ * ```typespec
+ * model ItemListResult {
+ *   items: Item[];
+ * }
+ *
+ * @Azure.ClientGenerator.Core.Legacy.markAsPageable(#{ pageItems: "items", scope: "csharp" })
+ * @route("/items")
+ * @get
+ * op listItems(): ItemListResult;
+ * ```
  */
-extern dec markAsPageable(target: Operation, scope?: valueof string);
+extern dec markAsPageable(
+  target: Operation,
+  scopeOrOptions?: valueof string | MarkAsPageableOptions
+);
+
+/**
+ * Options for forcing an operation to be treated as pageable.
+ */
+model MarkAsPageableOptions {
+  /**
+   * The response model property name that contains page items.
+   * When omitted, TCGC uses the property decorated with `@pageItems`, then falls back to a property named `value`.
+   */
+  pageItems?: string;
+
+  /**
+   * Specifies the target language emitters that the decorator should apply.
+   * If not set, the decorator will be applied to all language emitters by default.
+   */
+  scope?: string;
+}
 
 /**
  * Prevents an operation from being treated as a pageable operation by the SDK generators,

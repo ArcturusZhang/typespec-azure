@@ -107,3 +107,20 @@ enum Azure.ClientGenerator.Core.Usage
 | output | `4`   | Used in response            |
 | json   | `256` | Used with JSON content type |
 | xml    | `512` | Used with XML content type  |
+
+## Azure.ClientGenerator.Core.Legacy
+
+### `MarkAsPageableOptions` {#Azure.ClientGenerator.Core.Legacy.MarkAsPageableOptions}
+
+Options for forcing an operation to be treated as pageable.
+
+```typespec
+model Azure.ClientGenerator.Core.Legacy.MarkAsPageableOptions
+```
+
+#### Properties
+
+| Name       | Type     | Description                                                                                                                                                                    |
+| ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| pageItems? | `string` | The response model property name that contains page items.<br />When omitted, TCGC uses the property decorated with `@pageItems`, then falls back to a property named `value`. |
+| scope?     | `string` | Specifies the target language emitters that the decorator should apply.<br />If not set, the decorator will be applied to all language emitters by default.                    |
